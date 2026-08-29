@@ -6,13 +6,11 @@
 #include <string.h>
 
 #ifndef BUILD_MAX_FILE
-#define BUILD_MAX_FILE (1024 * 1024)
+#define BUILD_MAX_FILE (1024 * 1024)        /* 1 MiB per source module */
 #endif
-
 #ifndef BUILD_MAX_OUTPUT
-#define BUILD_MAX_OUTPUT (8 * 1024 * 1024)
+#define BUILD_MAX_OUTPUT (8 * 1024 * 1024)  /* 8 MiB total output */
 #endif
-
 #ifndef BUILD_MAX_HEADER
 #define BUILD_MAX_HEADER 4096
 #endif
@@ -22,26 +20,52 @@
 #endif
 
 typedef struct {
-    char   *out;
+    char   *out;        /* growing output buffer, BUILD_MAX_OUTPUT cap */
     size_t  out_len;
-    char   *version;
-    char   *placeholder;
+    char   *version;     /* trimmed contents of the version file */
+    char   *placeholder;  /* e.g. "__HLS_SAVER_VERSION__" */
 } build_t;
 
 typedef struct {
+    const char *key;
+    const char *value;
+} build_tag_t;
+
+typedef struct {
     const char *name;
-    const char *namespace_;
+    const char *namespace_;      /* "namespace" is a C++ keyword, avoid it */
     const char *description;
-    const char *const *match;
+    const char *const *match;    /* array of @match patterns */
     size_t match_count;
-    const char *const *grant;
+    const char *const *grant;    /* array of @grant permissions */
     size_t grant_count;
-    const char *run_at;
+    const char *run_at;          /* NULL -> "document-start" */
+    const build_tag_t *extra;    /* arbitrary extra @key value lines */
+    size_t extra_count;
 } build_meta_t;
+
+#define declaremeta(name, ...) \
+    static build_meta_t name = { __VA_ARGS__ }
 
 #define listout(name, ...) \
     static const char *name[] = { __VA_ARGS__ }; \
     enum { name##_COUNT = sizeof(name) / sizeof(name[0]) }
+
+/* Same idea as listout(), but for build_tag_t pairs -- use this for
+ * `.extra` in declaremeta() when you need @tag lines the fixed
+ * build_meta_t fields don't cover:
+ *
+ *   listtags(EXTRA,
+ *       { "downloadURL", "https://example.com/x.user.js" },
+ *       { "updateURL",   "https://example.com/x.meta.js" });
+ *
+ *   declaremeta(META, ..., .extra = EXTRA, .extra_count = EXTRA_COUNT);
+ */
+#define listtags(name, ...) \
+    static const build_tag_t name[] = { __VA_ARGS__ }; \
+    enum { name##_COUNT = sizeof(name) / sizeof(name[0]) }
+
+/* ---- internal helpers ------------------------------------------------ */
 
 static char *build__read_file(const char *path, long *out_len) {
     FILE *f = fopen(path, "rb");
@@ -132,6 +156,8 @@ static void build_userscript_header(build_t *b, const build_meta_t *m) {
         BUILD__EMIT("// @match        %s\n", m->match[i]);
     for (size_t i = 0; i < m->grant_count; i++)
         BUILD__EMIT("// @grant        %s\n", m->grant[i]);
+    for (size_t i = 0; i < m->extra_count; i++)
+        BUILD__EMIT("// @%-12s %s\n", m->extra[i].key, m->extra[i].value);
     BUILD__EMIT("// @run-at       %s\n", m->run_at ? m->run_at : "document-start");
     BUILD__EMIT("%s", "// ==/UserScript==\n\n");
 
@@ -180,6 +206,15 @@ static void build_add_all(build_t *b, const char *const *paths, size_t count,
 }
 
 static void build_finish(build_t *b, const char *out_path) {
+#ifdef OUTFILE
+    if (!out_path) out_path = OUTFILE;
+#endif
+    if (!out_path) {
+        fprintf(stderr, "build: build_finish() needs an output path -- either "
+                         "pass one, or #define OUTFILE before #include \"build.h\"\n");
+        exit(1);
+    }
+
     /* mkdir -p the containing directory, if any */
     char dir[1024];
     const char *slash = strrchr(out_path, '/');

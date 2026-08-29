@@ -1,44 +1,49 @@
+/* build.c -- concatenates src/ modules in dependency order into
+ * dist/aparse.user.js, using build.h for all the generic plumbing.
+ *
+ * Usage: run from the project root as `./tools/build` (see Makefile).
+ */
 #include "build.h"
 
-#define NAME        "Google — Fast Elegant Debloat (Privacy Edition)"
-#define NAMESPACE   "https://github.com/HimadriChakra12/ungoog"
-#define DESCRIPTION "Lightweight, theme-aware Google Search cleanup with canvas fingerprint poisoning, storage nuking, referrer stripping, telemetry blocking, and reduced bloat. AI Overview preserved."
+#define NAME        ""
+#define NAMESPACE   ""
+#define DESCRIPTION ""
+
+#define OUTFILE "" //OUTPUT
 
 listout(MATCH,
-        "https://www.google.com/*",
-        "https://google.com/*"
-       );
+    "",
+    );
 
 listout(GRANT,
-        "none"
-       );
+    "unsafeWindow",
+    "GM_download"
+    );
+
+/* Custom @tag lines that don't have a fixed build_meta_t field. */
+listtags(EXTRA,
+    { "//NAME", "//Description" },
+    );
 
 listout(ORDER,
-        "src/namespace.js",
-        "src/canvas.js",
-        "src/blockedurls.js",
-        "src/styles.js",
-        "src/cache&cookie.js",
-        "src/patch.js",
-        "src/sppof.js",
-        "src/compactmode.js"
-       );
+    "src/namespace.js",
+    );
+
+declaremeta(META,
+    .name = NAME,
+    .namespace_ = NAMESPACE,
+    .description = DESCRIPTION,
+    .match = MATCH, .match_count = MATCH_COUNT,
+    .grant = GRANT, .grant_count = GRANT_COUNT,
+    .run_at = "document-start",
+    .extra = EXTRA, .extra_count = EXTRA_COUNT,
+);
 
 int main(void) {
     build_t b;
-    build_init(&b, NULL, "__HLS_SAVER_VERSION__"); /* NULL -> tools/VERSION */
-
-    build_meta_t meta = {
-        .name = NAME,
-        .namespace_ = NAMESPACE,
-        .description = DESCRIPTION,
-        .match = MATCH, .match_count = MATCH_COUNT,
-        .grant = GRANT, .grant_count = GRANT_COUNT,
-        .run_at = "document-start",
-    };
-    build_userscript_header(&b, &meta);
-
+    build_init(&b, NULL, "__HLS_SAVER_VERSION__"); 
+    build_userscript_header(&b, &META);
     build_add_all(&b, ORDER, ORDER_COUNT, "src/");
-    build_finish(&b, "dist/ungoog.user.js"); //OUTPUT
+    build_finish(&b, NULL); 
     return 0;
 }
