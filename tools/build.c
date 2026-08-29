@@ -14,7 +14,7 @@ listout(GRANT,
     );
 
 listout(ORDER,
-    ""
+    "src/namespace.js"
     );
 
 int main(void) {
