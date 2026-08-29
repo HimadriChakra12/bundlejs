@@ -1,15 +1,9 @@
-/* build.c -- concatenates src/ modules in dependency order into
- * dist/aparse.user.js, using build.h for all the generic plumbing.
- *
- * Usage: run from the project root as `./tools/build` (see Makefile).
- */
+#define OUTFILE "" //OUTPUT
 #include "build.h"
 
 #define NAME        ""
 #define NAMESPACE   ""
 #define DESCRIPTION ""
-
-#define OUTFILE "" //OUTPUT
 
 listout(MATCH,
     "",
