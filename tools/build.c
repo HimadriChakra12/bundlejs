@@ -1,21 +1,28 @@
 #include "build.h"
 
-#define NAME        ""
-#define NAMESPACE   ""
-#define DESCRIPTION ""
+#define NAME        "Google — Fast Elegant Debloat (Privacy Edition)"
+#define NAMESPACE   "https://github.com/HimadriChakra12/ungoog"
+#define DESCRIPTION "Lightweight, theme-aware Google Search cleanup with canvas fingerprint poisoning, storage nuking, referrer stripping, telemetry blocking, and reduced bloat. AI Overview preserved."
 
 listout(MATCH,
-    ""
-    );
+        "https://www.google.com/*",
+        "https://google.com/*"
+       );
 
 listout(GRANT,
-    "unsafeWindow",
-    "GM_download"
-    );
+        "none"
+       );
 
 listout(ORDER,
-    "src/namespace.js"
-    );
+        "src/namespace.js",
+        "src/canvas.js",
+        "src/blockedurls.js",
+        "src/styles.js",
+        "src/cache&cookie.js",
+        "src/patch.js",
+        "src/sppof.js",
+        "src/compactmode.js"
+       );
 
 int main(void) {
     build_t b;
@@ -32,6 +39,6 @@ int main(void) {
     build_userscript_header(&b, &meta);
 
     build_add_all(&b, ORDER, ORDER_COUNT, "src/");
-    build_finish(&b, ""); //OUTPUT
+    build_finish(&b, "dist/ungoog.user.js"); //OUTPUT
     return 0;
 }
