@@ -20,7 +20,8 @@ listtags(EXTRA,
     );
 
 listout(ORDER,
-    "src/namespace.js",
+    "src/start.js",
+    "src/end.js",
     );
 
 declaremeta(META,
