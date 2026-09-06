@@ -5,26 +5,31 @@
 #define NAMESPACE   ""
 #define DESCRIPTION ""
 
-listout(MATCH,
+listmatch(
     "",
     );
 
-listout(GRANT,
+listgrant(
     "unsafeWindow",
     "GM_download"
     );
 
 /* Custom @tag lines that don't have a fixed build_meta_t field. */
-listtags(EXTRA,
+listextra(
     { "//NAME", "//Description" },
     );
 
-listout(ORDER,
+#define GROUPNAME group( \
+    "src/group/script.js", \
+    )
+ 
+listorder(
     "src/start.js",
+    GROUPNAME
     "src/end.js",
     );
 
-declaremeta(META,
+declaremeta(
     .name = NAME,
     .namespace_ = NAMESPACE,
     .description = DESCRIPTION,

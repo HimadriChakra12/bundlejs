@@ -44,28 +44,26 @@ typedef struct {
     size_t extra_count;
 } build_meta_t;
 
-#define declaremeta(name, ...) \
+#define declaremeta(...) \
+    static build_meta_t META = { __VA_ARGS__ }
+
+#define declaremetaas(name, ...) \
     static build_meta_t name = { __VA_ARGS__ }
 
 #define listout(name, ...) \
     static const char *name[] = { __VA_ARGS__ }; \
     enum { name##_COUNT = sizeof(name) / sizeof(name[0]) }
 
-/* Same idea as listout(), but for build_tag_t pairs -- use this for
- * `.extra` in declaremeta() when you need @tag lines the fixed
- * build_meta_t fields don't cover:
- *
- *   listtags(EXTRA,
- *       { "downloadURL", "https://example.com/x.user.js" },
- *       { "updateURL",   "https://example.com/x.meta.js" });
- *
- *   declaremeta(META, ..., .extra = EXTRA, .extra_count = EXTRA_COUNT);
- */
 #define listtags(name, ...) \
     static const build_tag_t name[] = { __VA_ARGS__ }; \
     enum { name##_COUNT = sizeof(name) / sizeof(name[0]) }
 
-/* ---- internal helpers ------------------------------------------------ */
+#define listmatch(...) listout(MATCH, __VA_ARGS__)
+#define listgrant(...) listout(GRANT, __VA_ARGS__)
+#define listorder(...) listout(ORDER, __VA_ARGS__)
+#define listextra(...) listtags(EXTRA, __VA_ARGS__)
+
+#define group(...) __VA_ARGS__
 
 static char *build__read_file(const char *path, long *out_len) {
     FILE *f = fopen(path, "rb");
@@ -114,6 +112,16 @@ static size_t build__append_subst(char *dst, size_t dst_len, const char *src,
     }
     return dst_len;
 }
+
+/* ---- public API -------------------------------------------------------
+ *
+ * build_init          -- allocate buffers, read+trim the version file. Pass placeholder=NULL to skip substitution.
+ * build_write_header   -- printf(header_template, version) into the output.
+ * build_add            -- append one source file, with a "// ---- name ----" marker line (strip_prefix chars are cut from the marker's displayed name, e.g. "src/").
+ * build_add_all        -- convenience: build_add over an array of paths.
+ * build_raw            -- append a literal string with no marker/subst, e.g. a blank line or manual boilerplate.
+ * build_finish         -- mkdir -p the output's directory, write the file, print a summary, free everything.
+ */
 
 static void build_init(build_t *b, const char *version_path, const char *placeholder) {
     b->out = malloc(BUILD_MAX_OUTPUT);
