@@ -19,6 +19,13 @@
 #define BUILD_VERSION_PATH "tools/VERSION"
 #endif
 
+#ifndef BUILD_WITH_MUJS
+static void mujs_check_all(const char *const *paths, size_t count, const char *strip_prefix) {
+    (void)paths; (void)count; (void)strip_prefix;
+}
+static void mujs_check_bundle(const void *b) { (void)b; }
+#endif
+
 typedef struct {
     char   *out;        /* growing output buffer, BUILD_MAX_OUTPUT cap */
     size_t  out_len;

@@ -1,5 +1,7 @@
 #define OUTFILE "" //OUTPUT
+//#define BUILD_WITH_MUJS
 #include "build.h"
+//#include "mujscompiler.h"
 
 #define NAME        ""
 #define NAMESPACE   ""
