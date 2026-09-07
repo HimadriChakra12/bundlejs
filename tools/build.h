@@ -113,9 +113,42 @@ static size_t build__append_subst(char *dst, size_t dst_len, const char *src,
     return dst_len;
 }
 
+static char *build__strip_comments(const char *content) {
+    size_t len = strlen(content);
+    char *out = malloc(len + 1);
+    if (!out) { perror("malloc"); exit(1); }
+    size_t out_len = 0;
+
+    const char *p = content;
+    while (*p) {
+        const char *line_start = p;
+        const char *line_end = strchr(p, '\n');
+        size_t line_len = line_end ? (size_t)(line_end - line_start) : strlen(line_start);
+
+        const char *trimmed = line_start;
+        while ((size_t)(trimmed - line_start) < line_len && (*trimmed == ' ' || *trimmed == '\t')) trimmed++;
+        size_t trimmed_len = line_len - (size_t)(trimmed - line_start);
+
+        int is_comment_line =
+            (trimmed_len >= 2 && trimmed[0] == '/' && trimmed[1] == '/') ||
+            (trimmed_len >= 4 && trimmed[0] == '/' && trimmed[1] == '*' &&
+             trimmed[trimmed_len - 2] == '*' && trimmed[trimmed_len - 1] == '/');
+
+        if (!is_comment_line) {
+            memcpy(out + out_len, line_start, line_len);
+            out_len += line_len;
+            if (line_end) out[out_len++] = '\n';
+        }
+
+        p = line_end ? line_end + 1 : line_start + line_len;
+    }
+    out[out_len] = '\0';
+    return out;
+}
+
 /* ---- public API -------------------------------------------------------
  *
- * build_init          -- allocate buffers, read+trim the version file. Pass placeholder=NULL to skip substitution.
+ * build_init           -- allocate buffers, read+trim the version file. Pass placeholder=NULL to skip substitution.
  * build_write_header   -- printf(header_template, version) into the output.
  * build_add            -- append one source file, with a "// ---- name ----" marker line (strip_prefix chars are cut from the marker's displayed name, e.g. "src/").
  * build_add_all        -- convenience: build_add over an array of paths.
@@ -180,7 +213,9 @@ static void build_raw(build_t *b, const char *text) {
 
 static void build_add(build_t *b, const char *path, const char *strip_prefix) {
     long len;
-    char *content = build__read_file(path, &len);
+    char *raw_content = build__read_file(path, &len);
+    char *content = build__strip_comments(raw_content);
+    free(raw_content);
 
     const char *display = path;
     if (strip_prefix) {
